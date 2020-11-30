@@ -1,3 +1,5 @@
 .idea/
 libutil.h
 libutil.so
+
+/vendor/

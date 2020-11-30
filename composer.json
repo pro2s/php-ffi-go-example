@@ -1,0 +1,25 @@
+{
+    "name": "pro2s/php-ffi-test",
+    "type": "project",
+    "require": {
+        "illuminate/collections": "^8.16"
+    },
+    "license": "MIT",
+    "description": "",
+    "autoload": {
+        "psr-4": {
+            "FFITest\\": "php/"
+        },
+        "files": [
+            "php/data.php"
+        ]
+    },
+    "scripts": {
+        "build" : [
+            "go build -o ./go/libutil.so -buildmode=c-shared ./go/util.go"
+        ],
+        "test" : [
+            "@php test.php"
+        ]
+    }
+}

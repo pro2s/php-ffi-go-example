@@ -1,6 +1,5 @@
 <?php
 
-// this function taken from https://blog.claudiupersoiu.ro/2019/12/23/a-bit-of-php-go-ffi-and-holiday-spirit/lang/en/
 function stringToGoString(FFI $ffi, string $name): FFI\CData
 {
     $strChar = str_split($name);
@@ -19,11 +18,21 @@ function stringToGoString(FFI $ffi, string $name): FFI\CData
 
 $ffi = FFI::cdef(
     "typedef struct { char* p; long n } GoString;
-    char* httpGet(GoString url);",
-    __DIR__ . "/libutil.so"
+    char* combine(GoString data);",
+    __DIR__ . "/go/libutil.so"
 );
+class Id
+{
+    public $id;
+    public $link_id;
+}
+$url = stringToGoString($ffi, serialize(
+    [
+        [['id' => 1, 'link_id' => 1],['id' => 2, 'link_id' => null]],
+        [['id' => 10, 'link_id' => 1],['id' => 12, 'link_id' => 1]]
+    ],
+));
 
-$url = stringToGoString($ffi, "http://httpbin.org/headers");
-
-echo FFI::string($ffi->httpGet($url));
-
+$back = FFI::string($ffi->combine($url));
+echo $back;
+var_dump(unserialize($back));

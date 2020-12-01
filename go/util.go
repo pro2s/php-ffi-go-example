@@ -55,13 +55,8 @@ type Option struct {
 //export combine
 func combine(id int, combinations [][]Option) *C.char {
     mixed := mix(combinations)
-    fmt.Println("Init: ", len(mixed))
-
     filtered := filter(mixed)
-    fmt.Println("Filter: ", len(filtered))
-
     out := format(id, filtered)
-    fmt.Println("Format: ", len(out))
 
     ret, err := phpserialize.Marshal(out, nil)
 	if err != nil {
@@ -90,11 +85,11 @@ func mix(slice [][]Option) [][]Option {
     combinations := mix(tail)
 
     for _, value := range combination {
+        optionValue := []Option{value}
         for _, combine := range combinations {
-            res = append(res, append([]Option{value}, combine...))
+            res = append(res, append(optionValue, combine...))
         }
     }
-
 
     return res;
 }

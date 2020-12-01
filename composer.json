@@ -18,8 +18,8 @@
         "build" : [
             "go build -o ./go/libutil.so -buildmode=c-shared ./go/util.go"
         ],
-        "test" : [
+        "test": [
             "@php test.php"
-        ]
+       ]
     }
 }

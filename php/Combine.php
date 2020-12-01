@@ -14,40 +14,29 @@ class Combine
         $this->model = $model;
     }
 
-    public function getCombinationsArray(array $arrays, int $depth = 0): array
+    public function getCombinationsArray(array $arrays): array
     {
-        if (!isset($arrays[$depth])) {
-            return [];
+        if (count($arrays) === 0) {
+            return [[]];
         }
 
-        if ($depth === count($arrays) - 1) {
-            return $arrays[$depth];
+        if (count($arrays) === 1) {
+            return array_map(fn ($value) => [$value], $arrays[0]);
         }
 
-        // get combinations from subsequent arrays
-        $combinations = $this->getCombinationsArray($arrays, $depth + 1);
+        $combination = array_shift($arrays);
+
+        $combinations = $this->getCombinationsArray($arrays);
 
         $result = [];
 
-        // concat each array from combinations with each element from $arrays[$depth]
-        foreach ($arrays[$depth] as $value) {
-            foreach ($combinations as $combination) {
-                $result[] = $this->combine($value, $combination);
+        foreach ($combination as $value) {
+            foreach ($combinations as $combine) {
+                $result[] = [$value, ...$combine];
             }
         }
 
         return $result;
-    }
-
-    public function combine($value, $combination): array
-    {
-        if (is_array($combination)) {
-            $combination[] = $value;
-
-            return $combination;
-        }
-
-        return [$value, $combination];
     }
 
     public function filterLinked($combinations): array
@@ -69,7 +58,9 @@ class Combine
 
     public function getHash(Collection $optionIds): string
     {
-        return hash('crc32', $this->model->id . '-' . $optionIds->implode('id', '-'));
+        $data = $this->model->id . '-' . $optionIds->implode('id', '-');
+
+        return sprintf("%x", crc32($data));
     }
 
     public function formatCombinations(array $combinations): array

@@ -19,10 +19,10 @@ class GoCombine
         );
     }
 
-    public function combine(array $combinations)
+    public function combine($combinations)
     {
-        $goSlice = $this->optionsToGoSlice($combinations);
-        $data = \FFI::string($this->ffi->combine($this->model->id, $goSlice));
+        $raw = $this->ffi->combine($this->model->id, $combinations);
+        $data = \FFI::string($raw);
 
         return unserialize($data);
     }

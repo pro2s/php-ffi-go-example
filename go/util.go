@@ -9,43 +9,6 @@ import (
     "github.com/elliotchance/phpserialize"
 )
 
-//export print
-func print(out *C.char) {
-    fmt.Println("[GO print] " + C.GoString(out))
-}
-
-//export sum
-func sum(a C.int, b C.int) C.int {
-    return a + b
-}
-
-//export serialize
-func serialize(data string) *C.char {
-	fmt.Println(data)
-
-	var in map[interface {}]interface {}
-    err := phpserialize.Unmarshal([]byte(data), &in)
-    if err != nil {
-		panic(err)
-    }
-
-    fmt.Println(in)
-
-    out := map[int]map[string]interface{}{
-        0: map[string]interface{}{"id": 1, "link_id": nil},
-        1: map[string]interface{}{"id": 2, "link_id": 1},
-    }
-
-    fmt.Println(out)
-
-    ret, err := phpserialize.Marshal(out, nil)
-	if err != nil {
-		panic(err)
-    }
-
-    return C.CString(string(ret))
-}
-
 type Option struct {
 	id int
 	linked_id int
@@ -94,22 +57,31 @@ func mix(slice [][]Option) [][]Option {
     return res;
 }
 
-func format(id int, combinations [][]Option) map[string]map[string]interface{} {
-    res := make(map[string]map[string]interface{})
+func gethash(id int, ids []int) string {
+    stringIds := make([]string, len(ids) + 1)
+    stringIds[0] = strconv.Itoa(id)
+    for i, id := range ids {
+        stringIds[i+1] = strconv.Itoa(id)
+    }
+
+    data := strings.Join(stringIds, "-")
+    hash := crc32.ChecksumIEEE([]byte(data))
+
+    return fmt.Sprintf("%x", hash)
+}
+
+func format(id int, combinations [][]Option) map[string][]int {
+    res := make(map[string][]int, len(combinations))
 
     for _, combination :=range combinations {
         ids := []int{}
-        idsString := []string{strconv.Itoa(id)}
         for _, option := range combination {
             if !option.empty {
                 ids = append(ids, option.id)
-                idsString = append(idsString, strconv.Itoa(option.id))
             }
         }
-        data := strings.Join(idsString, "-")
-        hash := crc32.ChecksumIEEE([]byte(data))
-        hashString := fmt.Sprintf("%x", hash)
-        res[hashString] = map[string]interface{}{"ids": ids}
+
+        res[gethash(id, ids)] = ids
     }
 
     return res
@@ -127,14 +99,12 @@ func filter(combinations [][]Option) [][]Option {
 }
 
 func filterLinked(options []Option) bool {
-    id := map[int]bool{}
+    ids := make(map[int]bool, len(options))
     linked := []int{}
-    test := []int{}
 
     for _, option := range options {
         if !option.empty {
-            id[option.id] = true
-            test = append(test, option.id)
+            ids[option.id] = true
             if option.linked_id != 0 {
                 linked = append(linked, option.linked_id)
             }
@@ -144,7 +114,7 @@ func filterLinked(options []Option) bool {
     res := true
 
     for _, key := range linked {
-        _, ok := id[key]
+        _, ok := ids[key]
         res = res && ok
     }
 

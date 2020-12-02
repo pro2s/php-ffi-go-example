@@ -12,6 +12,7 @@ class GoCombine
         $this->model = $model;
         $this->ffi = \FFI::cdef(
             "
+            typedef struct { char* p; long n } GoString;
             typedef struct { long id; long linked_id; bool empty; } Option;
             typedef struct { void *data; long len; long cap; } GoSlice;
             char* combine(long id, GoSlice data);",
@@ -58,14 +59,12 @@ class GoCombine
         return $out;
     }
 
-    public function stringToGoString(string $string): FFI\CData
+    public function stringToGoString(string $string): \FFI\CData
     {
         $length = strlen($string);
 
         $c = \FFI::new('char[' . $length . ']', false);
-        for ($i=0; $i < $length; $i++) {
-            $c[$i] = $string[$i];
-        }
+        \FFI::memcpy($c, $string, strlen($string));
 
         $goString = $this->ffi->new("GoString");
         $goString->p = \FFI::cast(\FFI::type('char *'), $c);

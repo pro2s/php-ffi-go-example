@@ -15,11 +15,16 @@ type Option struct {
 	empty bool
 }
 
+type Result struct {
+	ids []int
+    hash string
+}
+
 //export combine
 func combine(id int, combinations [][]Option) *C.char {
     mixed := mix(combinations)
     filtered := filter(mixed)
-    out := format(id, filtered)
+    out := goFormat(id, filtered)
 
     ret, err := phpserialize.Marshal(out, nil)
 	if err != nil {
@@ -84,7 +89,7 @@ func goCombine(combination []Option, combinations [][]Option) [][]Option {
     return res
 }
 
-func chAdd(channel chan<-[][]Option, value Option, combinations [][]Option) {
+func chAdd(channel chan<- [][]Option, value Option, combinations [][]Option) {
     channel <- add(value, combinations)
 }
 
@@ -111,18 +116,56 @@ func gethash(id int, ids []int) string {
     return fmt.Sprintf("%x", hash)
 }
 
+func worker(modelId int, jobs <-chan []Option, results chan<- Result) {
+    for j := range jobs {
+        hash, ids := formatCombination(modelId, j)
+        results <- Result{ids, hash}
+    }
+}
+
+func goFormat(id int, combinations [][]Option) map[string][]int {
+    res := map[string][]int{}
+    numJobs := len(combinations)
+
+    jobs := make(chan []Option, numJobs)
+    results := make(chan Result, numJobs)
+
+    for w := 1; w <= 10; w++ {
+        go worker(id, jobs, results)
+    }
+
+    for _, j := range combinations {
+        jobs <- j
+    }
+
+    close(jobs)
+
+    for numJobs > 0 {
+        r := <- results
+        res[r.hash] = r.ids
+        numJobs -= 1
+    }
+
+    return res
+}
+
+func formatCombination(id int, options []Option) (string, []int) {
+    ids := []int{}
+    for _, option := range options {
+        if !option.empty {
+            ids = append(ids, option.id)
+        }
+    }
+
+    return gethash(id, ids), ids
+}
+
 func format(id int, combinations [][]Option) map[string][]int {
     res := make(map[string][]int, len(combinations))
 
-    for _, combination :=range combinations {
-        ids := []int{}
-        for _, option := range combination {
-            if !option.empty {
-                ids = append(ids, option.id)
-            }
-        }
-
-        res[gethash(id, ids)] = ids
+    for _, combination := range combinations {
+        hash, ids := formatCombination(id, combination)
+        res[hash] = ids
     }
 
     return res

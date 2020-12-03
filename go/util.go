@@ -29,32 +29,73 @@ func combine(id int, combinations [][]Option) *C.char {
     return C.CString(string(ret))
 }
 
-func mix(slice [][]Option) [][]Option {
+func wrap(slice []Option) [][]Option {
     res := [][]Option{}
+    for _, value := range slice {
+        res = append(res, []Option{value})
+    }
 
+    return res
+}
+
+func mix(slice [][]Option) [][]Option {
     if len(slice) == 0 {
-        return res;
+        return [][]Option{};
     }
 
     if len(slice) == 1 {
-        for _, value := range slice[0] {
-            res = append(res, []Option{value})
-        }
-
-        return res
+        return wrap(slice[0])
     }
 
     combination, tail := slice[0], slice[1:]
     combinations := mix(tail)
 
+    return goCombine(combination, combinations);
+}
+
+func simpleCombine(combination []Option, combinations [][]Option) [][]Option {
+    res := [][]Option{}
+
     for _, value := range combination {
-        optionValue := []Option{value}
-        for _, combine := range combinations {
-            res = append(res, append(optionValue, combine...))
+        res = append(res, add(value, combinations)...)
+    }
+
+    return res
+}
+
+func goCombine(combination []Option, combinations [][]Option) [][]Option {
+    res := [][]Option{}
+    count := len(combination)
+    channel := make(chan [][]Option, count)
+
+    for _, value := range combination {
+        go chAdd(channel, value, combinations)
+    }
+
+    for r := range channel {
+        count -= 1
+        res = append(res, r...)
+
+        if count == 0 {
+            break
         }
     }
 
-    return res;
+    return res
+}
+
+func chAdd(channel chan<-[][]Option, value Option, combinations [][]Option) {
+    channel <- add(value, combinations)
+}
+
+func add(value Option, combinations [][]Option) [][]Option {
+    res := make([][]Option, len(combinations))
+
+    for i, combine := range combinations {
+        res[i] = append([]Option{value}, combine...)
+    }
+
+    return res
 }
 
 func gethash(id int, ids []int) string {

@@ -1,30 +1,20 @@
 package main
 
 import (
-    "hash/crc32"
+    "./base"
+    "./util"
     "C"
-    "fmt"
-    "strings"
-    "strconv"
     "github.com/elliotchance/phpserialize"
 )
 
-type Option struct {
-	id int
-	linked_id int
-	empty bool
-}
-
-type Result struct {
-	ids []int
-    hash string
-}
+type Option = base.Option
 
 //export combine
 func combine(id int, combinations [][]Option) *C.char {
-    mixed := mix(combinations)
+    mixed := mix(combinations, base.GoCombine)
     filtered := filter(mixed)
-    out := goFormat(id, filtered)
+    formater := formatWithId(id)
+    out := format(filtered, base.GoFormat, formater)
 
     ret, err := phpserialize.Marshal(out, nil)
 	if err != nil {
@@ -34,147 +24,25 @@ func combine(id int, combinations [][]Option) *C.char {
     return C.CString(string(ret))
 }
 
-func wrap(slice []Option) [][]Option {
-    res := [][]Option{}
-    for _, value := range slice {
-        res = append(res, []Option{value})
-    }
-
-    return res
-}
-
-func mix(slice [][]Option) [][]Option {
+func mix(slice [][]Option, combine base.Combiner) [][]Option {
     if len(slice) == 0 {
         return [][]Option{};
     }
 
     if len(slice) == 1 {
-        return wrap(slice[0])
+        return base.Wrap(slice[0])
     }
 
     combination, tail := slice[0], slice[1:]
-    combinations := mix(tail)
+    combinations := mix(tail, combine)
 
-    return goCombine(combination, combinations);
-}
-
-func simpleCombine(combination []Option, combinations [][]Option) [][]Option {
-    res := [][]Option{}
-
-    for _, value := range combination {
-        res = append(res, add(value, combinations)...)
-    }
-
-    return res
-}
-
-func goCombine(combination []Option, combinations [][]Option) [][]Option {
-    res := [][]Option{}
-    count := len(combination)
-    channel := make(chan [][]Option, count)
-
-    for _, value := range combination {
-        go chAdd(channel, value, combinations)
-    }
-
-    for r := range channel {
-        count -= 1
-        res = append(res, r...)
-
-        if count == 0 {
-            break
-        }
-    }
-
-    return res
-}
-
-func chAdd(channel chan<- [][]Option, value Option, combinations [][]Option) {
-    channel <- add(value, combinations)
-}
-
-func add(value Option, combinations [][]Option) [][]Option {
-    res := make([][]Option, len(combinations))
-
-    for i, combine := range combinations {
-        res[i] = append([]Option{value}, combine...)
-    }
-
-    return res
-}
-
-func gethash(id int, ids []int) string {
-    stringIds := make([]string, len(ids) + 1)
-    stringIds[0] = strconv.Itoa(id)
-    for i, id := range ids {
-        stringIds[i+1] = strconv.Itoa(id)
-    }
-
-    data := strings.Join(stringIds, "-")
-    hash := crc32.ChecksumIEEE([]byte(data))
-
-    return fmt.Sprintf("%x", hash)
-}
-
-func worker(modelId int, jobs <-chan []Option, results chan<- Result) {
-    for j := range jobs {
-        hash, ids := formatCombination(modelId, j)
-        results <- Result{ids, hash}
-    }
-}
-
-func goFormat(id int, combinations [][]Option) map[string][]int {
-    res := map[string][]int{}
-    numJobs := len(combinations)
-
-    jobs := make(chan []Option, numJobs)
-    results := make(chan Result, numJobs)
-
-    for w := 1; w <= 10; w++ {
-        go worker(id, jobs, results)
-    }
-
-    for _, j := range combinations {
-        jobs <- j
-    }
-
-    close(jobs)
-
-    for numJobs > 0 {
-        r := <- results
-        res[r.hash] = r.ids
-        numJobs -= 1
-    }
-
-    return res
-}
-
-func formatCombination(id int, options []Option) (string, []int) {
-    ids := []int{}
-    for _, option := range options {
-        if !option.empty {
-            ids = append(ids, option.id)
-        }
-    }
-
-    return gethash(id, ids), ids
-}
-
-func format(id int, combinations [][]Option) map[string][]int {
-    res := make(map[string][]int, len(combinations))
-
-    for _, combination := range combinations {
-        hash, ids := formatCombination(id, combination)
-        res[hash] = ids
-    }
-
-    return res
+    return combine(combination, combinations);
 }
 
 func filter(combinations [][]Option) [][]Option {
     res := combinations[:0]
     for _, x := range combinations {
-        if filterLinked(x) {
+        if base.CorrectLinked(x) {
             res = append(res, x)
         }
     }
@@ -182,27 +50,16 @@ func filter(combinations [][]Option) [][]Option {
     return res;
 }
 
-func filterLinked(options []Option) bool {
-    ids := make(map[int]bool, len(options))
-    linked := []int{}
+func format(combinations [][]Option, formater base.Formater, format base.OptionsFormater) map[string][]int {
+    return formater(format, combinations)
+}
 
-    for _, option := range options {
-        if !option.empty {
-            ids[option.id] = true
-            if option.linked_id != 0 {
-                linked = append(linked, option.linked_id)
-            }
-        }
+func formatWithId(id int) base.OptionsFormater {
+    return func (options []Option) (string, []int) {
+        ids := base.GetIds(options)
+
+        return util.GetHash(id, ids), ids
     }
-
-    res := true
-
-    for _, key := range linked {
-        _, ok := ids[key]
-        res = res && ok
-    }
-
-    return res
 }
 
 func main() {}

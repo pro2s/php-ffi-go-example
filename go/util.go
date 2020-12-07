@@ -8,13 +8,14 @@ import (
 )
 
 type Option = base.Option
+type Combinations = base.Combinations
 
 //export combine
 func combine(id int, combinations [][]Option) *C.char {
     mixed := mix(combinations, base.GoCombine)
     filtered := filter(mixed)
     formater := formatWithId(id)
-    out := format(filtered, base.GoFormat, formater)
+    out := filtered.GoFormat(formater)
 
     ret, err := phpserialize.Marshal(out, nil)
 	if err != nil {
@@ -24,9 +25,9 @@ func combine(id int, combinations [][]Option) *C.char {
     return C.CString(string(ret))
 }
 
-func mix(slice [][]Option, combine base.Combiner) [][]Option {
+func mix(slice Combinations, combine base.Combiner) Combinations {
     if len(slice) == 0 {
-        return [][]Option{};
+        return Combinations{};
     }
 
     if len(slice) == 1 {
@@ -39,7 +40,7 @@ func mix(slice [][]Option, combine base.Combiner) [][]Option {
     return combine(combination, combinations);
 }
 
-func filter(combinations [][]Option) [][]Option {
+func filter(combinations Combinations) Combinations {
     res := combinations[:0]
     for _, x := range combinations {
         if base.CorrectLinked(x) {
@@ -48,10 +49,6 @@ func filter(combinations [][]Option) [][]Option {
     }
 
     return res;
-}
-
-func format(combinations [][]Option, formater base.Formater, format base.OptionsFormater) map[string][]int {
-    return formater(format, combinations)
 }
 
 func formatWithId(id int) base.OptionsFormater {

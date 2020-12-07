@@ -6,7 +6,9 @@ type Option struct {
 	empty bool
 }
 
-func Wrap(slice []Option) [][]Option {
+type Combinations [][]Option
+
+func Wrap(slice []Option) Combinations {
     res := [][]Option{}
     for _, value := range slice {
         res = append(res, []Option{value})
@@ -49,8 +51,8 @@ func GetIds(options []Option) []int {
 	return ids;
 }
 
-func (option Option) AddTo (combinations [][]Option) [][]Option {
-    res := make([][]Option, len(combinations))
+func (option Option) AddTo (combinations Combinations) Combinations {
+    res := make(Combinations, len(combinations))
 
     for i, combine := range combinations {
         res[i] = append([]Option{option}, combine...)

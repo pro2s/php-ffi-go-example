@@ -1,14 +1,13 @@
 package base
 
 type OptionsFormater func ([]Option) (string, []int)
-type Formater func (OptionsFormater, [][]Option) map[string][]int
 
 type Result struct {
 	ids []int
     hash string
 }
 
-func Format(format OptionsFormater, combinations [][]Option) map[string][]int {
+func (combinations Combinations) Format(format OptionsFormater) map[string][]int {
     res := make(map[string][]int, len(combinations))
 
     for _, combination := range combinations {
@@ -26,7 +25,7 @@ func worker(format OptionsFormater, jobs <-chan []Option, results chan<- Result)
     }
 }
 
-func GoFormat(format OptionsFormater, combinations [][]Option) map[string][]int {
+func (combinations Combinations) GoFormat(format OptionsFormater) map[string][]int {
     res := map[string][]int{}
     numJobs := len(combinations)
 

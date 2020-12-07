@@ -1,8 +1,30 @@
 package base
-type Combiner func ([]Option, [][]Option) [][]Option
+type Combiner func ([]Option, Combinations) Combinations
 
-func Combine(combination []Option, combinations [][]Option) [][]Option {
-    res := [][]Option{}
+func (slice Combinations) Mix() Combinations {
+	return slice.mix(combine)
+}
+
+func (slice Combinations) GoMix() Combinations {
+	return slice.mix(goCombine)
+}
+
+func (slice Combinations) mix(combine Combiner) Combinations {
+    switch len(slice) {
+	case 0:
+		return Combinations{};
+	case 1:
+		return Wrap(slice[0])
+	default:
+	    combination, tail := slice[0], slice[1:]
+    	combinations := tail.mix(combine)
+
+		return combine(combination, combinations)
+	}
+}
+
+func combine(combination []Option, combinations Combinations) Combinations {
+    res := Combinations{}
 
     for _, value := range combination {
         res = append(res, value.AddTo(combinations)...)
@@ -11,14 +33,14 @@ func Combine(combination []Option, combinations [][]Option) [][]Option {
     return res
 }
 
-func chAdd(channel chan<- [][]Option, value Option, combinations [][]Option) {
+func chAdd(channel chan<- Combinations, value Option, combinations Combinations) {
     channel <- value.AddTo(combinations)
 }
 
-func GoCombine(combination []Option, combinations [][]Option) [][]Option {
-    res := [][]Option{}
+func goCombine(combination []Option, combinations Combinations) Combinations {
+    res := Combinations{}
     count := len(combination)
-    channel := make(chan [][]Option, count)
+    channel := make(chan Combinations, count)
 
     for _, value := range combination {
         go chAdd(channel, value, combinations)

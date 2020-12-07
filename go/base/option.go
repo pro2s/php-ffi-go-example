@@ -5,19 +5,19 @@ type Option struct {
 	linked_id int
 	empty bool
 }
-
+type Combination []Option
 type Combinations [][]Option
 
-func Wrap(slice []Option) Combinations {
-    res := [][]Option{}
+func Wrap(slice Combination) Combinations {
+    res := Combinations{}
     for _, value := range slice {
-        res = append(res, []Option{value})
+        res = append(res, Combination{value})
     }
 
     return res
 }
 
-func CorrectLinked(options []Option) bool {
+func isCorrectLinked(options Combination) bool {
     ids := make(map[int]bool, len(options))
     linked := []int{}
 
@@ -40,7 +40,7 @@ func CorrectLinked(options []Option) bool {
     return res
 }
 
-func GetIds(options []Option) []int {
+func (options Combination) GetIds() []int {
 	ids := []int{}
     for _, option := range options {
         if !option.empty {
@@ -51,13 +51,23 @@ func GetIds(options []Option) []int {
 	return ids;
 }
 
-func (option Option) AddTo (combinations Combinations) Combinations {
+func (option Option) AddTo(combinations Combinations) Combinations {
     res := make(Combinations, len(combinations))
 
     for i, combine := range combinations {
-        res[i] = append([]Option{option}, combine...)
+        res[i] = append(Combination{option}, combine...)
     }
 
     return res
 }
 
+func (combinations Combinations) Filter() Combinations {
+    res := combinations[:0]
+    for _, x := range combinations {
+        if isCorrectLinked(x) {
+            res = append(res, x)
+        }
+    }
+
+    return res;
+}

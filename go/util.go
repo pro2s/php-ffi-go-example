@@ -15,7 +15,7 @@ type Combinations = base.Combinations
 func combine(id int, combinations [][]Option) *C.char {
     formater := formatWithId(id)
 
-    out := Combinations(combinations).GoMix().Filter().GoFormat(formater)
+    out := GoProccess(combinations, formater)
 
     ret, err := phpserialize.Marshal(out, nil)
 	if err != nil {
@@ -25,7 +25,15 @@ func combine(id int, combinations [][]Option) *C.char {
     return C.CString(string(ret))
 }
 
-func formatWithId(id int) base.OptionsFormater {
+func GoProccess(in Combinations, formater base.Formater) map[string][]int {
+    return in.GoMix().Filter().GoFormat(formater)
+}
+
+func Proccess(in Combinations, formater base.Formater) map[string][]int {
+    return in.Mix().Filter().Format(formater)
+}
+
+func formatWithId(id int) base.Formater {
     return func (options Combination) (string, []int) {
         ids := options.GetIds()
 

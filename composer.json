@@ -2,6 +2,7 @@
     "name": "pro2s/php-ffi-test",
     "type": "project",
     "require": {
+        "php" : ">=7.4",
         "illuminate/collections": "^8.16"
     },
     "license": "MIT",
@@ -15,11 +16,15 @@
         ]
     },
     "scripts": {
+        "wasm" : [
+            "GOOS=js GOARCH=wasm go build -o ./go/util.wasm ./go/main.go"
+        ],
         "build" : [
             "go build -o ./go/libutil.so -buildmode=c-shared ./go/util.go"
         ],
         "test": [
-            "@php test.php"
+            "@php test.php",
+            "node ./nodejs/wasm.js"
        ]
     }
 }

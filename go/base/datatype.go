@@ -18,3 +18,9 @@ func (options Combination) GetIds() []int {
 
 	return ids;
 }
+
+var EmptyOption = Option{empty: true}
+
+func NewOption(id int, linked_id int) Option {
+	return Option{id: id, linked_id: linked_id}
+}

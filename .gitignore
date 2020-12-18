@@ -2,5 +2,5 @@
 .vscode/
 libutil.h
 libutil.so
-
+/go/*.wasm
 /vendor/

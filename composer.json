@@ -10,10 +10,7 @@
     "autoload": {
         "psr-4": {
             "FFITest\\": "php/"
-        },
-        "files": [
-            "php/data.php"
-        ]
+        }
     },
     "scripts": {
         "wasm" : [

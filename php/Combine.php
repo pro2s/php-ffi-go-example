@@ -5,13 +5,30 @@ namespace FFITest;
 use FFITest\Model;
 use Illuminate\Support\Collection;
 
-class Combine
+class Combine implements CombineInterface
 {
     public $model;
 
     public function __construct(Model $model)
     {
         $this->model = $model;
+    }
+
+    public function getName(): string
+    {
+        return 'PHP';
+    }
+
+    public function map(array $arrays)
+    {
+        return $arrays;
+    }
+
+    public function combine($data)
+    {
+        $combinations = $this->getCombinationsArray($data);
+        $combinations = $this->filterLinked($combinations);
+        return $this->formatCombinations($combinations);
     }
 
     public function getCombinationsArray(array $arrays): array
@@ -65,16 +82,23 @@ class Combine
 
     public function formatCombinations(array $combinations): array
     {
-        $combinationsArray = array_map(function ($combination) {
+        $combinationsArray = array_reduce($combinations, function ($acc, $combination) {
             $items = collect($combination)->filter();
-
-            return [
-                'hash' => $this->getHash($items),
+            $hash = $this->getHash($items);
+            $acc[$hash] = [
+                'hash' => $hash,
                 'ids' => $items->pluck('id')->all(),
                 'items' => $items
             ];
-        }, $combinations);
+
+            return $acc;
+        }, []);
 
         return $combinationsArray;
+    }
+
+    public function formatCombination(array $combinations, $hash): string
+    {
+        return implode(',', $combinations[$hash]['ids'] ?? []);
     }
 }

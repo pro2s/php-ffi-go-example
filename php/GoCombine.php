@@ -2,7 +2,7 @@
 
 namespace FFITest;
 
-class GoCombine
+class GoCombine implements CombineInterface
 {
     protected $model;
     protected $ffi;
@@ -17,6 +17,11 @@ class GoCombine
     {
         $this->model = $model;
         $this->ffi = \FFI::cdef(self::DEFF, $lib);
+    }
+
+    public function getName(): string
+    {
+        return 'GO';
     }
 
     public function combine($combinations)
@@ -55,7 +60,7 @@ class GoCombine
         $data->linked_id = $option->linked_id ?? 0;
     }
 
-    public function optionsToGoSlice(array $combinations): \FFI\CData
+    public function map(array $combinations): \FFI\CData
     {
         $dataLen = count($combinations);
         $data = $this->newArray('GoSlice', $dataLen);
@@ -88,5 +93,10 @@ class GoCombine
         $goString->n = $length;
 
         return $goString;
+    }
+
+    public function formatCombination(array $combinations, $hash): string
+    {
+        return implode(',', $combinations[$hash] ?? []);
     }
 }

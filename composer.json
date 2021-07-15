@@ -13,15 +13,18 @@
         }
     },
     "scripts": {
-        "wasm" : [
-            "GOOS=js GOARCH=wasm go build -o ./go/util.wasm ./go/main.go"
+        "build:web" : [
+            "GOOS=js GOARCH=wasm go build -o ./go/web.wasm ./go/web.go"
         ],
-        "build" : [
-            "go build -o ./go/libutil.so -buildmode=c-shared ./go/util.go"
+        "build:lib" : [
+            "go build -o ./go/lib.so -buildmode=c-shared ./go/lib.go"
+        ],
+        "build": [
+            "@build:web",
+            "@build:lib"
         ],
         "test": [
-            "@php test.php",
-            "node ./nodejs/wasm.js"
-       ]
+            "@php test.php"
+        ]
     }
 }

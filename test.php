@@ -4,23 +4,16 @@ namespace FFITest;
 
 require 'vendor/autoload.php';
 
-$service = new GoCombine(new Model(1), __DIR__ . "/go/libutil.so");
-$goRunner = new Runner($service);
-$goRunner->run();
-$goRunner->print();
+$product = new Model(1);
 
+$goRunner = new Runner(new GoCombine($product, __DIR__ . "/go/lib.so"));
+$phpRunner = new Runner(new Combine($product));
+$nodeRunner = new NodeRunner('./nodejs/wasm.js', $product);
 
-$service = new Combine(new Model(1));
-$phpRunner = new Runner($service);
-$phpRunner->run();
-$phpRunner->print();
+$runners = [$phpRunner, $goRunner, $nodeRunner];
+array_walk($runners, function (RunnerInterface $runner) {
+    $runner->run();
+    $runner->print();
+});
 
-$errors = [];
-foreach ($phpRunner->getCombinations() as $combination) {
-    if (!$goRunner->hasCombination($combination['hash'])) {
-        $errors[] = $combination['hash'];
-    }
-}
-
-echo count($errors) === 0 ? 'OK' : 'ERRORS: ' . implode(', ', $errors), PHP_EOL;
-echo round($phpRunner->getTime() / $goRunner->getTime()), ' times', PHP_EOL;
+(new Validator($phpRunner, [$goRunner, $nodeRunner]))->validate();

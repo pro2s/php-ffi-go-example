@@ -2,7 +2,7 @@
 
 namespace FFITest;
 
-class Runner
+class Runner implements RunnerInterface
 {
     protected $service;
     protected $start;
@@ -27,12 +27,18 @@ class Runner
         return $this->end - $this->start;
     }
 
+    public function getName(): string
+    {
+        return $this->service->getName();
+    }
+
     public function print()
     {
-        echo $this->service->getName() . ':', PHP_EOL;
+        echo $this->getName() , ':', PHP_EOL;
         echo 'Total: ', count($this->combinations), PHP_EOL;
         echo $this->service->formatCombination($this->combinations, Data::TEST_HASH), PHP_EOL;
         echo 'Time: ', $this->getTime(), PHP_EOL;
+        echo PHP_EOL;
     }
 
     public function getCombinations(): array

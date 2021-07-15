@@ -1,6 +1,6 @@
 .idea/
 .vscode/
-libutil.h
-libutil.so
+/go/*.h
+/go/*.so
 /go/*.wasm
 /vendor/

@@ -1,18 +1,24 @@
 require('./wasm_exec');
 const fs = require("fs");
 const data = require("./data");
-const wasm = './go/util.wasm';
+const wasm = './go/web.wasm';
 const go = new Go();
 
-const start = async () => {
+const start = async (productId) => {
     result = await WebAssembly.instantiate(fs.readFileSync(wasm), go.importObject);
     go.run(result.instance);
 
-    const combinations = wasmCombine(1, data);
-    console.log(combinations.total);
-    console.log(combinations['65e36ba5']);
+    const start = process.hrtime();
+    const combinations = wasmCombine(productId, data);
+    const [endSec, end] = process.hrtime(start);
+
+    console.log(JSON.stringify({
+        combinations,
+        time: endSec + end / 1e9,
+    }));
 
     go.exit(0);
 }
 
-start();
+const hash = process.argv.slice(2)[0] || 1;
+start(1);
